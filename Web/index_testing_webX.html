@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>คำนวณอายุ — 2025 UI</title>
+  <meta name="color-scheme" content="light" />
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      /* Bright Purple theme */
+      --bg: 248 245 255;           /* lilac */
+      --fg: 24 18 43;              /* near-black purple */
+      --muted: 94 88 120;          /* muted plum */
+      --card: 255 255 255;         /* white card */
+      --accent: 148 87 255;        /* main bright purple */
+      --accent-2: 115 98 255;      /* blue-ish purple */
+      --ring: 177 120 255;         /* focus ring purple */
+      --radius: 18px;
+      --shadow: 20, 0, 90;         /* purple shadow base */
+
+      /* Toast semantic colors */
+      --toast-info: 120 120 255;
+      --toast-success: 56 176 90;
+      --toast-warning: 255 169 46;
+      --toast-danger: 235 64 106;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: Inter, 'Noto Sans Thai', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji';
+      color: rgb(var(--fg));
+      background:
+        radial-gradient(1200px 800px at 10% -10%, rgba(var(--accent),0.20), transparent 60%),
+        radial-gradient(900px 700px at 110% 10%, rgba(var(--accent-2),0.18), transparent 60%),
+        linear-gradient(180deg, rgb(var(--bg)) 0%, rgb(var(--bg)) 100%);
+    }
+
+    .wrap {
+      min-height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(12px);
+      background: color-mix(in srgb, rgb(var(--bg)) 78%, white 22%);
+      border-bottom: 1px solid color-mix(in srgb, rgb(var(--accent)) 28%, transparent);
+      z-index: 10;
+    }
+
+    .container {
+      width: min(1100px, 92vw);
+      margin-inline: auto;
+      padding: 16px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-weight: 800;
+      letter-spacing: 0.1px;
+      color: rgb(65 40 130);
+    }
+
+    .brand .logo {
+      width: 34px; height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(var(--accent),1), rgba(var(--accent-2),1));
+      display: inline-grid; place-items: center;
+      color: white;
+      box-shadow: 0 10px 30px rgba(var(--shadow), 0.25);
+    }
+
+    .brand .logo svg { width: 18px; height: 18px; }
+
+    .actions { display: flex; gap: 8px; align-items: center; }
+
+    .btn, button.btn {
+      appearance: none; border: 0; cursor: pointer;
+      padding: 11px 14px; border-radius: calc(var(--radius) - 8px);
+      background: linear-gradient(135deg, rgba(var(--accent),1), rgba(var(--accent-2),1)); color: white; font-weight: 800;
+      transition: transform .04s ease, box-shadow .2s ease, background .2s ease, color .2s ease;
+      box-shadow: 0 8px 22px rgba(var(--shadow), 0.18);
+      letter-spacing: .1px;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn.secondary { background: rgba(var(--accent),0.12); color: rgb(var(--fg)); border: 1px solid rgba(var(--accent),0.35); }
+    .btn.ghost { background: transparent; color: rgb(var(--fg)); box-shadow: none; }
+
+    main { padding: 26px 0 48px; }
+
+    .grid {
+      display: grid; gap: 18px;
+      grid-template-columns: 1.15fr 0.85fr;
+    }
+    @media (max-width: 920px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: color-mix(in srgb, rgb(var(--card)) 92%, transparent);
+      border: 1px solid color-mix(in srgb, rgb(var(--accent)) 28%, transparent);
+      border-radius: var(--radius);
+      padding: 18px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 20px 50px rgba(var(--shadow), 0.20);
+    }
+
+    .h1 { font-size: clamp(24px, 3.4vw, 38px); font-weight: 900; line-height: 1.15; letter-spacing: -0.02em; }
+    .sub { color: rgb(var(--muted)); margin-top: 6px; }
+
+    .form {
+      display: grid; gap: 14px; margin-top: 18px;
+    }
+
+    label { font-weight: 700; display: inline-flex; align-items: center; gap: 8px; }
+
+    .control { display: grid; gap: 6px; }
+
+    .row { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+    @media (max-width: 680px){ .row { grid-template-columns: 1fr; } }
+
+    input[type="date"], input[type="time"], input[type="datetime-local"], input[type="text"], select {
+      width: 100%;
+      padding: 12px 14px; border-radius: calc(var(--radius) - 10px);
+      border: 1px solid color-mix(in srgb, rgb(var(--fg)) 17%, transparent);
+      background: color-mix(in srgb, rgb(var(--card)) 96%, white 6%);
+      color: rgb(var(--fg));
+      outline: none; font-size: 15px;
+      transition: border .15s ease, box-shadow .2s ease, background .2s ease;
+    }
+    input:focus, select:focus { border-color: rgb(var(--ring)); box-shadow: 0 0 0 4px color-mix(in srgb, rgb(var(--ring)) 35%, transparent); }
+
+    .switch {
+      --h: 28px; display: inline-grid; grid-auto-flow: column; gap: 10px; align-items: center;
+      user-select: none; cursor: pointer; width: fit-content;
+    }
+    .switch input { display: none; }
+    .switch .track {
+      width: 52px; height: var(--h); border-radius: calc(var(--h) / 2);
+      background: color-mix(in srgb, rgb(var(--fg)) 14%, transparent);
+      position: relative; transition: background .2s ease;
+    }
+    .switch .thumb {
+      position: absolute; top: 2px; left: 2px; width: calc(var(--h) - 4px); height: calc(var(--h) - 4px);
+      border-radius: 999px; background: white; box-shadow: 0 8px 20px rgba(var(--shadow), .2);
+      transition: left .2s ease, background .2s ease, transform .2s ease;
+    }
+    .switch input:checked + .track { background: rgb(var(--accent)); }
+    .switch input:checked + .track .thumb { left: calc(52px - var(--h) + 2px); }
+
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .toolbar .badge { font-size: 13px; color: rgb(var(--muted)); }
+
+    .results { display: grid; gap: 14px; margin-top: 12px; }
+
+    .metric { display: grid; gap: 10px; padding: 14px; border-radius: calc(var(--radius) - 8px); border: 1px dashed color-mix(in srgb, rgb(var(--fg)) 18%, transparent); }
+    .metric .title { font-weight: 800; display: flex; align-items: center; gap: 8px; }
+    .metric .value { font-size: clamp(20px, 2.6vw, 28px); font-weight: 900; letter-spacing: -0.01em; }
+    .metric .muted { color: rgb(var(--muted)); font-size: 14px; }
+
+    .pill {
+      display: inline-flex; gap: 8px; align-items: center; padding: 6px 10px; border-radius: 999px;
+      border: 1px solid color-mix(in srgb, rgb(var(--fg)) 14%, transparent); color: rgb(var(--muted)); font-size: 13px;
+    }
+
+    .muted { color: rgb(var(--muted)); }
+
+    footer { padding: 20px 0 34px; color: rgb(var(--muted)); text-align: center; }
+
+    /* Toast 2.0 */
+    .toaster { position: fixed; inset: 16px 50% auto auto; transform: translateX(50%); display: grid; gap: 12px; z-index: 99; }
+    @media (max-width: 680px){ .toaster { inset: 12px 12px auto auto; transform: none; } }
+    .toast {
+      display: grid; grid-template-columns: 28px 1fr auto; align-items: start; gap: 12px;
+      min-width: 280px; max-width: min(92vw, 520px); padding: 14px 16px; border-radius: 16px;
+      box-shadow: 0 20px 44px rgba(var(--shadow), .25); color: rgb(30 28 50);
+      background: rgba(255,255,255,0.75);
+      border: 1px solid rgba(140, 110, 250, 0.25); backdrop-filter: blur(10px);
+    }
+    .toast .icon { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; font-weight: 800; }
+    .toast .msg { line-height: 1.35; font-weight: 600; }
+    .toast[data-variant="info"]    { border-left: 5px solid rgb(var(--toast-info)); }
+    .toast[data-variant="success"] { border-left: 5px solid rgb(var(--toast-success)); }
+    .toast[data-variant="warning"] { border-left: 5px solid rgb(var(--toast-warning)); }
+    .toast[data-variant="danger"]  { border-left: 5px solid rgb(var(--toast-danger)); }
+    .toast[data-variant="info"] .icon    { background: rgba(var(--toast-info), .18); }
+    .toast[data-variant="success"] .icon { background: rgba(var(--toast-success), .18); }
+    .toast[data-variant="warning"] .icon { background: rgba(var(--toast-warning), .18); }
+    .toast[data-variant="danger"] .icon  { background: rgba(var(--toast-danger), .18); }
+
+    .visually-hidden { position: absolute !important; height: 1px; width: 1px; overflow: hidden; clip: rect(1px, 1px, 1px, 1px); white-space: nowrap; }
+
+    .divider { height: 1px; background: color-mix(in srgb, rgb(var(--accent)) 22%, transparent); margin: 8px 0; }
+
+    .lang {
+      display: inline-flex; gap: 8px; align-items: center;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="container topbar" role="navigation" aria-label="Topbar">
+      <div class="brand" aria-label="Age Calculator">
+        <span class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 12a7 7 0 1 0 14 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M12 3v9l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span data-i18n="brand">คำนวณอายุ · 2025</span>
+      </div>
+      <div class="actions">
+        <div class="lang">
+          <label for="langSel" class="visually-hidden">Language</label>
+          <select id="langSel" title="Language">
+            <option value="th">ไทย</option>
+            <option value="en-US">English (US)</option>
+            <option value="zh-Hans">简体中文</option>
+            <option value="zh-Hant">繁體中文</option>
+            <option value="vi">Tiếng Việt</option>
+            <option value="lo">ລາວ</option>
+            <option value="my">မြန်မာ</option>
+          </select>
+        </div>
+        <button id="shareBtn" class="btn secondary" data-i18n="share">แชร์</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container grid">
+      <!-- Left: Form -->
+      <section class="card" aria-labelledby="title">
+        <h1 id="title" class="h1" data-i18n="title">คำนวณอายุแบบละเอียด</h1>
+        <p class="sub" data-i18n="subtitle">UI/UX กลาส + เกรเดียนต์ สไตล์ 2025 • โทนสี: ม่วงสว่าง • อัปเดตเรียลไทม์</p>
+
+        <div class="form" role="form" aria-describedby="tzInfo">
+          <div class="row">
+            <div class="control">
+              <label for="birthDate" data-i18n="birth_date">วันเกิด (ค.ศ.)</label>
+              <input id="birthDate" type="date" required />
+            </div>
+            <div class="control" id="birthTimeWrap">
+              <label for="birthTime" data-i18n="birth_time">เวลาเกิด (ไม่จำเป็น)</label>
+              <input id="birthTime" type="time" step="60" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="control">
+              <label class="switch" title="ใช้เวลาปัจจุบัน">
+                <input id="nowToggle" type="checkbox" checked />
+                <span class="track"><span class="thumb"></span></span>
+              </label>
+              <span class="pill" id="nowPill" data-i18n="now_on">ใช้เวลาปัจจุบัน</span>
+            </div>
+            <div class="control">
+              <label class="switch" title="ละเอียดระดับเวลา">
+                <input id="timeDetailToggle" type="checkbox" checked />
+                <span class="track"><span class="thumb"></span></span>
+              </label>
+              <span class="pill" data-i18n="time_detail">ละเอียดระดับเวลา (ชั่วโมง:นาที)</span>
+            </div>
+          </div>
+
+          <div class="row" id="refRow" aria-hidden="true" hidden>
+            <div class="control">
+              <label for="refDate" data-i18n="ref_date">อ้างอิงถึงวันที่</label>
+              <input id="refDate" type="date" />
+            </div>
+            <div class="control" id="refTimeWrap">
+              <label for="refTime" data-i18n="ref_time">เวลาอ้างอิง</label>
+              <input id="refTime" type="time" step="60" />
+            </div>
+          </div>
+
+          <div class="toolbar" style="margin-top: 2px;">
+            <span id="tzInfo" class="badge"><span data-i18n="tz">โซนเวลา</span>: <span id="tzName">—</span> (<span id="tzOffset">UTC±0</span>)</span>
+            <span class="badge" data-i18n="auto_save">บันทึกค่าอัตโนมัติลงอุปกรณ์</span>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="toolbar">
+            <!-- Removed manual calc button -->
+            <button id="resetBtn" class="btn secondary" data-i18n="reset">ล้างค่า</button>
+            <span id="status" class="badge" role="status"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right: Results -->
+      <aside class="card" aria-labelledby="resultsTitle">
+        <h2 id="resultsTitle" class="h1" style="font-size: clamp(20px, 2.4vw, 28px);" data-i18n="results">ผลลัพธ์</h2>
+        <div class="results" id="results">
+          <div class="metric" id="ageYMD">
+            <div class="title" data-i18n="age_now_title">อายุปัจจุบัน</div>
+            <div class="value" id="ymdValue">— ปี — เดือน — วัน</div>
+            <div class="muted" id="ymdExplain" data-i18n="fill_and_auto">กรอกข้อมูลแล้วระบบจะคำนวณอัตโนมัติ</div>
+          </div>
+
+          <div class="metric" id="ageTotals">
+            <div class="title" data-i18n="totals_title">รวมทั้งหมด</div>
+            <div class="value" id="totalValue">— วัน • — ชั่วโมง • — นาที • — วินาที</div>
+            <div class="muted" id="totalExplain" data-i18n="count_from">นับจากวันเกิดถึงเวลาที่เลือก</div>
+          </div>
+
+          <div class="metric" id="nextBday">
+            <div class="title" data-i18n="next_bday_title">วันเกิดถัดไป</div>
+            <div class="value" id="nextValue">—</div>
+            <div class="muted" id="nextExplain">เหลืออีก — วัน</div>
+          </div>
+
+          <div class="metric" id="meta">
+            <div class="title" data-i18n="detail_title">รายละเอียด</div>
+            <div class="value" id="metaValue">วันเกิด: — • ราศี: — • นักษัตร: —</div>
+            <div class="muted" id="metaExplain">จะมีอายุครบ — ปีในวันเกิดถัดไป</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container" id="footerLine">
+      <span data-i18n="footer_line">สร้างด้วย ❤ ปี 2025 • ดีไซน์กลาส + เกรเดียนต์ • เปิดซอร์ส</span>
+    </div>
+  </footer>
+</div>
+
+<div class="toaster" id="toaster" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+  // ===== i18n =====
+  const I18N = {
+    "th": {
+      brand: "คำนวณอายุ · 2025",
+      share: "แชร์",
+      title: "คำนวณอายุแบบละเอียด",
+      subtitle: "อัปเดตเรียลไทม์",
+      birth_date: "วันเกิด (ค.ศ.)",
+      birth_time: "เวลาเกิด (ไม่จำเป็น)",
+      now_on: "ใช้เวลาปัจจุบัน",
+      now_off: "กำหนดวัน/เวลาเอง",
+      time_detail: "ละเอียดระดับเวลา (ชั่วโมง:นาที)",
+      ref_date: "อ้างอิงถึงวันที่",
+      ref_time: "เวลาอ้างอิง",
+      tz: "โซนเวลา",
+      auto_save: "บันทึกค่าอัตโนมัติลงอุปกรณ์",
+      reset: "ล้างค่า",
+      results: "ผลลัพธ์",
+      age_now_title: "อายุปัจจุบัน",
+      fill_and_auto: "กรอกข้อมูลแล้วระบบจะคำนวณอัตโนมัติ",
+      totals_title: "รวมทั้งหมด",
+      count_from: "นับจากวันเกิดถึงเวลาที่เลือก",
+      next_bday_title: "วันเกิดถัดไป",
+      detail_title: "รายละเอียด",
+      footer_line: "2025",
+      calc_at: "คำนวณเมื่อ",
+      updated_live: "อัปเดตตามเวลาปัจจุบันของเครื่องคุณ",
+      fixed_time: "เวลาคงที่ตามที่กำหนด",
+      weekday: ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'],
+      month: ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'],
+      zodiac_west: ['กุมภ์','มีน','เมษ','พฤษภ','เมถุน','กรกฎ','สิงห์','กันย์','ตุลย์','พิจิก','ธนู','มังกร'],
+      zodiac_cn: ['ชวด','ฉลู','ขาล','เถาะ','มะโรง','มะเส็ง','มะเมีย','มะแม','วอก','ระกา','จอ','กุน'],
+      year: "ปี", month_u: "เดือน", day: "วัน",
+      hour: "ชั่วโมง", minute: "นาที", second: "วินาที",
+      left: "เหลืออีก",
+      will_turn: "จะอายุครบ",
+      years_old: "ปี",
+      birthday_str: "วันเกิด"
+    },
+    "en-US": {
+      brand: "Age Calculator · 2025",
+      share: "Share",
+      title: "Precise Age Calculator",
+      subtitle: "Real-time updates",
+      birth_date: "Birth date (AD)",
+      birth_time: "Birth time (optional)",
+      now_on: "Use current time",
+      now_off: "Custom date/time",
+      time_detail: "Include time (HH:MM)",
+      ref_date: "Reference date",
+      ref_time: "Reference time",
+      tz: "Time zone",
+      auto_save: "Auto-save on device",
+      reset: "Reset",
+      results: "Results",
+      age_now_title: "Current age",
+      fill_and_auto: "Enter your data — calculation runs automatically",
+      totals_title: "Totals",
+      count_from: "From birth to selected time",
+      next_bday_title: "Next birthday",
+      detail_title: "Details",
+      footer_line: "2025",
+      calc_at: "Calculated at",
+      updated_live: "Live with your device time",
+      fixed_time: "Fixed time as selected",
+      weekday: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+      month: ['January','February','March','April','May','June','July','August','September','October','November','December'],
+      zodiac_west: ['Aquarius','Pisces','Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn'],
+      zodiac_cn: ['Rat','Ox','Tiger','Rabbit','Dragon','Snake','Horse','Goat','Monkey','Rooster','Dog','Pig'],
+      year: "year", month_u: "month", day: "day",
+      hour: "hour", minute: "minute", second: "second",
+      left: "left",
+      will_turn: "You will turn",
+      years_old: "years old",
+      birthday_str: "Birthday"
+    },
+    "zh-Hans": {
+      brand: "年龄计算 · 2025",
+      share: "分享",
+      title: "精确年龄计算器",
+      subtitle: "实时更新",
+      birth_date: "出生日期",
+      birth_time: "出生时间（可选）",
+      now_on: "使用当前时间",
+      now_off: "自定义日期/时间",
+      time_detail: "包含时间（小时:分钟）",
+      ref_date: "参考日期",
+      ref_time: "参考时间",
+      tz: "时区",
+      auto_save: "自动保存在设备上",
+      reset: "重置",
+      results: "结果",
+      age_now_title: "当前年龄",
+      fill_and_auto: "输入后自动计算",
+      totals_title: "总计",
+      count_from: "从出生到所选时间",
+      next_bday_title: "下一个生日",
+      detail_title: "详情",
+      footer_line: "2025",
+      calc_at: "计算于",
+      updated_live: "随设备时间实时更新",
+      fixed_time: "按所选时间固定",
+      weekday: ['周日','周一','周二','周三','周四','周五','周六'],
+      month: ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'],
+      zodiac_west: ['水瓶','双鱼','白羊','金牛','双子','巨蟹','狮子','处女','天秤','天蝎','射手','摩羯'],
+      zodiac_cn: ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'],
+      year: "年", month_u: "月", day: "天",
+      hour: "小时", minute: "分钟", second: "秒",
+      left: "剩余",
+      will_turn: "将满",
+      years_old: "岁",
+      birthday_str: "生日"
+    },
+    "zh-Hant": {
+      brand: "年齡計算 · 2025",
+      share: "分享",
+      title: "精確年齡計算器",
+      subtitle: "即時更新",
+      birth_date: "出生日期",
+      birth_time: "出生時間（選填）",
+      now_on: "使用目前時間",
+      now_off: "自訂日期/時間",
+      time_detail: "包含時間（小時:分鐘）",
+      ref_date: "參考日期",
+      ref_time: "參考時間",
+      tz: "時區",
+      auto_save: "自動儲存於裝置",
+      reset: "重設",
+      results: "結果",
+      age_now_title: "目前年齡",
+      fill_and_auto: "輸入後自動計算",
+      totals_title: "總計",
+      count_from: "從生日到所選時間",
+      next_bday_title: "下個生日",
+      detail_title: "詳細資料",
+      footer_line: "2025",
+      calc_at: "計算於",
+      updated_live: "依裝置時間即時更新",
+      fixed_time: "固定為所選時間",
+      weekday: ['週日','週一','週二','週三','週四','週五','週六'],
+      month: ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'],
+      zodiac_west: ['水瓶','雙魚','牡羊','金牛','雙子','巨蟹','獅子','處女','天秤','天蠍','射手','摩羯'],
+      zodiac_cn: ['鼠','牛','虎','兔','龍','蛇','馬','羊','猴','雞','狗','豬'],
+      year: "年", month_u: "月", day: "天",
+      hour: "小時", minute: "分鐘", second: "秒",
+      left: "剩餘",
+      will_turn: "將滿",
+      years_old: "歲",
+      birthday_str: "生日"
+    },
+    "vi": {
+      brand: "Tính tuổi · 2025",
+      share: "Chia sẻ",
+      title: "Bộ tính tuổi chính xác",
+      subtitle: "Cập nhật theo thời gian thực",
+      birth_date: "Ngày sinh",
+      birth_time: "Giờ sinh (tuỳ chọn)",
+      now_on: "Dùng thời gian hiện tại",
+      now_off: "Tự chọn ngày/giờ",
+      time_detail: "Bao gồm giờ:phút",
+      ref_date: "Ngày tham chiếu",
+      ref_time: "Giờ tham chiếu",
+      tz: "Múi giờ",
+      auto_save: "Tự lưu trên thiết bị",
+      reset: "Xoá",
+      results: "Kết quả",
+      age_now_title: "Tuổi hiện tại",
+      fill_and_auto: "Nhập xong là tính tự động",
+      totals_title: "Tổng số",
+      count_from: "Từ ngày sinh đến thời điểm chọn",
+      next_bday_title: "Sinh nhật kế tiếp",
+      detail_title: "Chi tiết",
+      footer_line: "2025",
+      calc_at: "Tính lúc",
+      updated_live: "Cập nhật theo giờ thiết bị",
+      fixed_time: "Thời điểm cố định",
+      weekday: ['CN','T2','T3','T4','T5','T6','T7'],
+      month: ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'],
+      zodiac_west: ['Bảo Bình','Song Ngư','Bạch Dương','Kim Ngưu','Song Tử','Cự Giải','Sư Tử','Xử Nữ','Thiên Bình','Bọ Cạp','Nhân Mã','Ma Kết'],
+      zodiac_cn: ['Tý','Sửu','Dần','Mão','Thìn','Tỵ','Ngọ','Mùi','Thân','Dậu','Tuất','Hợi'],
+      year: "năm", month_u: "tháng", day: "ngày",
+      hour: "giờ", minute: "phút", second: "giây",
+      left: "còn lại",
+      will_turn: "Sẽ tròn",
+      years_old: "tuổi",
+      birthday_str: "Ngày sinh"
+    },
+    "lo": {
+      brand: "ຄິດໄວອາຍຸ · 2025",
+      share: "ແບ່ງປັນ",
+      title: "ຄຳນວນອາຍຸແບບລະອຽດ",
+      subtitle: "ອັບເດດແບບເວລາຈິງ",
+      birth_date: "ວັນເກີດ",
+      birth_time: "ເວລາເກີດ (ບໍ່ຈຳເປັນ)",
+      now_on: "ໃຊ້ເວລາປັດຈຸບັນ",
+      now_off: "ກຳນົດວັນ/ເວລາເອງ",
+      time_detail: "ລະອຽດເວລາ (ຊົ່ວໂມງ:ນາທີ)",
+      ref_date: "ວັນອ້າງອີງ",
+      ref_time: "ເວລາອ້າງອີງ",
+      tz: "ເຂດເວລາ",
+      auto_save: "ບັນທຶກອັດຕະໂນມັດ",
+      reset: "ລ້າງຄ່າ",
+      results: "ຜົນລັບ",
+      age_now_title: "ອາຍຸປັດຈຸບັນ",
+      fill_and_auto: "ໃສ່ຂໍ້ມູນແລ້ວຄຳນວນອັດຕະໂນມັດ",
+      totals_title: "ລວມທັງໝົດ",
+      count_from: "ນັບຈາກວັນເກີດ",
+      next_bday_title: "ວັນເກີດຕໍ່ໄປ",
+      detail_title: "ລາຍລະອຽດ",
+      footer_line: "2025",
+      calc_at: "ຄຳນວນເມື່ອ",
+      updated_live: "ອັບເດດຕາມເວລາອຸປະກອນ",
+      fixed_time: "ເວລາຄົງທີ່",
+      weekday: ['ອາທິດ','ຈັນ','ອັງຄານ','ພຸດ','ພະຫັດ','ສຸກ','ເສົາ'],
+      month: ['ມັງກອນ','ກຸມພາ','ມີນາ','ເມສາ','ພຶດສະພາ','ມິຖຸນາ','ກໍລະກົດ','ສິງຫາ','ກັນຍາ','ຕຸລາ','ພະຈິກ','ທັນວາ'],
+      zodiac_west: ['Aquarius','Pisces','Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn'],
+      zodiac_cn: ['ຫນູ','ງົວ','ເສືອ','ເສົາ','ມັງກອນ','ງູ','ມ້າ','ແບ້','ລີງ','ໄກ່','ຫມາ','ຫມູ'],
+      year: "ປີ", month_u: "ເດືອນ", day: "ວັນ",
+      hour: "ຊົ່ວໂມງ", minute: "ນາທີ", second: "ວິນາທີ",
+      left: "ຍັງເຫຼືອ",
+      will_turn: "ຈະຄົບ",
+      years_old: "ປີ",
+      birthday_str: "ວັນເກີດ"
+    },
+    "my": {
+      brand: "အသက်တွက်ချက် · 2025",
+      share: "မျှဝေမယ်",
+      title: "အသေးစိတ် အသက်တွက်ချက်ကိရိယာ",
+      subtitle: "အချိန်နဲ့အမျှ",
+      birth_date: "မွေးသက္ကရာဇ်",
+      birth_time: "မွေးချိန် (မဖြစ်လည်းရ)",
+      now_on: "လက်ရှိအချိန်အသုံးပြု",
+      now_off: "ရက်/အချိန် ထည့်သွင်းမယ်",
+      time_detail: "အချိန်ဖော်ပြ (နာရီ:မိနစ်)",
+      ref_date: "ရည်ညွှန်းရက်",
+      ref_time: "ရည်ညွှန်းအချိန်",
+      tz: "အချိန်ဇိုင်း",
+      auto_save: "စက်ထဲ auto-save",
+      reset: "ဖျက်သိမ်း",
+      results: "ရလဒ်",
+      age_now_title: "လက်ရှိ အသက်",
+      fill_and_auto: "ထည့်လိုက်ရင် အလိုလျောက်တွက်တယ်",
+      totals_title: "စုစုပေါင်း",
+      count_from: "မွေးနေ့မှ ရွေးထားသော အချိန်",
+      next_bday_title: "နောက်ထပ် မွေးနေ့",
+      detail_title: "အသေးစိတ်",
+      footer_line: "2025",
+      calc_at: "တွက်ချက်ချိန်",
+      updated_live: "စက်အချိန်နှင့်ကိုက်ညီအောင် အပြီးတိုင်",
+      fixed_time: "ရွေးထားသော အချိန်",
+      weekday: ['တနင်္ဂနွေ','တနင်္လာ','အင်္ဂါ','ဗုဒ္ဓဟူး','ကြာသပတေး','သောကြာ','စနေ'],
+      month: ['ဇန်နဝါရီ','ဖေဖော်ဝါရီ','မတ်','ဧပြီ','မေ','ဇွန်','ဇူလိုင်','ဩဂုတ်','စက်တင်ဘာ','အောက်တိုဘာ','နိုဝင်ဘာ','ဒီဇင်ဘာ'],
+      zodiac_west: ['Aquarius','Pisces','Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn'],
+      zodiac_cn: ['ြပင်','နွား','ကျား','ကြွေ','နဂါး','မြွေ','မြင်း','ဆံပင်','လိမ်','ကြက်','ခွေး','၀က်'],
+      year: "နှစ်", month_u: "လ", day: "ရက်",
+      hour: "နာရီ", minute: "မိနစ်", second: "စက္ကန့်",
+      left: "ကျန်ရှိ",
+      will_turn: "ပြည့်မယ်",
+      years_old: "နှစ်",
+      birthday_str: "မွေးနေ့"
+    }
+  };
+
+  function applyI18n(lang){
+    const dict = I18N[lang] || I18N['en-US'];
+    document.documentElement.lang = (lang==='zh-Hans'?'zh-CN':lang==='zh-Hant'?'zh-TW':lang);
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (dict[key]) el.textContent = dict[key];
+    });
+  }
+
+  // ===== Utils =====
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => Array.from(document.querySelectorAll(sel));
+  const pad = (n, w=2) => String(n).padStart(w, '0');
+  const DAY = 24*60*60*1000;
+
+  function toast(a, b) {
+    // toast('ข้อความ') OR toast('warning','ข้อความ')
+    let variant = 'info', msg = a;
+    if (b !== undefined) { variant = a; msg = b; }
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.setAttribute('data-variant', variant);
+    t.innerHTML = '<span class="icon">⚡</span><div class="msg">'+msg+'</div><button class="btn ghost" style="padding:6px 10px; font-weight:800">×</button>';
+    t.querySelector('button').addEventListener('click', ()=> t.remove());
+    $('#toaster').appendChild(t);
+    setTimeout(()=>{ t.style.opacity = '0'; t.style.transform = 'translateY(6px)'; }, 4200);
+    setTimeout(()=> t.remove(), 4800);
+  }
+
+  function tzString() {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const offMin = -new Date().getTimezoneOffset();
+    const sign = offMin >= 0 ? '+' : '-';
+    const hh = Math.floor(Math.abs(offMin)/60);
+    const mm = Math.abs(offMin)%60;
+    return { tz, offset: `UTC${sign}${pad(hh)}:${pad(mm)}` };
+  }
+
+  function parseLocal(dateStr, timeStr) {
+    if (!dateStr) return null;
+    if (timeStr) return new Date(`${dateStr}T${timeStr}`);
+    return new Date(`${dateStr}T00:00`);
+  }
+
+  function diffYMD(start, end) {
+    if (end < start) return { years: 0, months: 0, days: 0 };
+    let y = end.getFullYear() - start.getFullYear();
+    let m = end.getMonth() - start.getMonth();
+    let d = end.getDate() - start.getDate();
+
+    if (d < 0) {
+      const prevEnd = new Date(end.getFullYear(), end.getMonth(), 0);
+      d += prevEnd.getDate();
+      m -= 1;
+    }
+    if (m < 0) {
+      m += 12;
+      y -= 1;
+    }
+    return { years: y, months: m, days: d };
+  }
+
+  function chineseZodiac(year, dict) {
+    const animals = dict.zodiac_cn;
+    const idx = (year - 4) % 12;
+    return animals[(idx+12)%12];
+  }
+
+  function westernZodiac(month, day, dict) {
+    const m = month + 1;
+    const md = m*100 + day;
+    const z = dict.zodiac_west;
+    if (md >= 120 && md <= 218) return z[0];
+    if (md <= 320) return z[1];
+    if (md <= 420) return z[2];
+    if (md <= 521) return z[3];
+    if (md <= 621) return z[4];
+    if (md <= 722) return z[5];
+    if (md <= 823) return z[6];
+    if (md <= 923) return z[7];
+    if (md <= 1023) return z[8];
+    if (md <= 1122) return z[9];
+    if (md <= 1221) return z[10];
+    return z[11];
+  }
+
+  function formatDateLocalized(dt, dict, withTime=false, withSeconds=false) {
+    const d = dt.getDate();
+    const m = dict.month[dt.getMonth()];
+    const y = dt.getFullYear();
+    const dow = dict.weekday[dt.getDay()];
+    const base = `${dow} ${d} ${m} ${y}`;
+    if (withTime) {
+      const t = `${pad(dt.getHours())}:${pad(dt.getMinutes())}${withSeconds?(':'+pad(dt.getSeconds())):''}`;
+      return `${base} ${dict.lang==='th' ? 'เวลา ' : ''}${t}`;
+    }
+    return base;
+  }
+
+  function formatNumber(n, lang) {
+    try {
+      return new Intl.NumberFormat(lang).format(n);
+    } catch (e) {
+      return String(n);
+    }
+  }
+
+  // ===== State & Elements =====
+  const birthDate = $('#birthDate');
+  const birthTime = $('#birthTime');
+  const refDate   = $('#refDate');
+  const refTime   = $('#refTime');
+  const nowToggle = $('#nowToggle');
+  const timeDetailToggle = $('#timeDetailToggle');
+  const refRow = $('#refRow');
+  const birthTimeWrap = $('#birthTimeWrap');
+  const refTimeWrap = $('#refTimeWrap');
+  const nowPill = $('#nowPill');
+
+  const resetBtn = $('#resetBtn');
+  const shareBtn = $('#shareBtn');
+  const langSel = $('#langSel');
+
+  const tzName = $('#tzName');
+  const tzOffset = $('#tzOffset');
+  const status = $('#status');
+
+  const ymdValue = $('#ymdValue');
+  const ymdExplain = $('#ymdExplain');
+  const totalValue = $('#totalValue');
+  const totalExplain = $('#totalExplain');
+  const nextValue = $('#nextValue');
+  const nextExplain = $('#nextExplain');
+  const metaValue = $('#metaValue');
+  const metaExplain = $('#metaExplain');
+
+  let liveTimer = null;
+  let currentLang = 'th';
+
+  function loadState() {
+    try {
+      const s = JSON.parse(localStorage.getItem('ageCalc2025')||'{}');
+      if (s.birthDate) birthDate.value = s.birthDate;
+      if (s.birthTime) birthTime.value = s.birthTime;
+      if (s.refDate) refDate.value = s.refDate;
+      if (s.refTime) refTime.value = s.refTime;
+      if (typeof s.now === 'boolean') nowToggle.checked = s.now;
+      if (typeof s.timeDetail === 'boolean') timeDetailToggle.checked = s.timeDetail;
+      if (s.lang) { currentLang = s.lang; langSel.value = currentLang; }
+    } catch (e) {}
+  }
+  function saveState() {
+    const s = {
+      birthDate: birthDate.value || '',
+      birthTime: birthTime.value || '',
+      refDate: refDate.value || '',
+      refTime: refTime.value || '',
+      now: !!nowToggle.checked,
+      timeDetail: !!timeDetailToggle.checked,
+      lang: currentLang
+    };
+    localStorage.setItem('ageCalc2025', JSON.stringify(s));
+  }
+
+  function updateTz() {
+    const tz = tzString();
+    tzName.textContent = tz.tz;
+    tzOffset.textContent = tz.offset;
+  }
+
+  function applyUIState(dict) {
+    const usingNow = nowToggle.checked;
+    refRow.hidden = usingNow;
+    refRow.setAttribute('aria-hidden', usingNow ? 'true' : 'false');
+    nowPill.textContent = usingNow ? dict.now_on : dict.now_off;
+
+    const timeDetail = timeDetailToggle.checked;
+    birthTimeWrap.style.display = timeDetail ? '' : 'none';
+    refTimeWrap.style.display = timeDetail ? '' : 'none';
+  }
+
+  function validateInputs(dict) {
+    if (!birthDate.value) {
+      toast('warning', dict.birth_date + ' ?');
+      birthDate.focus();
+      return false;
+    }
+    if (!nowToggle.checked && !refDate.value) {
+      toast('warning', dict.ref_date + ' ?');
+      refDate.focus();
+      return false;
+    }
+    return true;
+  }
+
+  function stopLive() { if (liveTimer) { clearInterval(liveTimer); liveTimer = null; } }
+
+  function computeOnce(dict) {
+    if (!validateInputs(dict)) return;
+
+    const useTime = timeDetailToggle.checked;
+
+    const b = parseLocal(birthDate.value, useTime ? birthTime.value : '');
+    const r = nowToggle.checked ? new Date() : parseLocal(refDate.value, useTime ? refTime.value : '');
+    if (!b || !r || isNaN(b.getTime()) || isNaN(r.getTime())) { toast('danger','Invalid date/time'); return; }
+    if (r < b) { toast('danger','Reference must be after birth'); return; }
+
+    // YMD diff
+    const dymd = diffYMD(b, r);
+    ymdValue.textContent = `${formatNumber(dymd.years, currentLang)} ${dict.year}  ${formatNumber(dymd.months, currentLang)} ${dict.month_u}  ${formatNumber(dymd.days, currentLang)} ${dict.day}`;
+    ymdExplain.textContent = `${formatDateLocalized(b, {...dict, lang: currentLang}, useTime && !!birthTime.value)} — ${formatDateLocalized(r, {...dict, lang: currentLang}, useTime && (!nowToggle.checked), true)}`;
+
+    // Totals
+    const ms = r - b;
+    const totalDays = Math.floor(ms / (24*60*60*1000));
+    const totalHours = Math.floor(ms / (60*60*1000));
+    const totalMinutes = Math.floor(ms / (60*1000));
+    const totalSeconds = Math.floor(ms / 1000);
+    totalValue.textContent = `${formatNumber(totalDays, currentLang)} ${dict.day} • ${formatNumber(totalHours, currentLang)} ${dict.hour} • ${formatNumber(totalMinutes, currentLang)} ${dict.minute} • ${formatNumber(totalSeconds, currentLang)} ${dict.second}`;
+    totalExplain.textContent = nowToggle.checked ? dict.updated_live : dict.fixed_time;
+
+    // Next birthday
+    const next = new Date(r.getFullYear(), b.getMonth(), b.getDate(), useTime ? (birthTime.value? Number(birthTime.value.split(':')[0]) : 0) : 0, useTime ? (birthTime.value? Number(birthTime.value.split(':')[1]) : 0) : 0, 0);
+    if (next <= r) next.setFullYear(next.getFullYear() + 1);
+    const till = next - r;
+    const leftDays = Math.floor(till / (24*60*60*1000));
+    const leftHours = Math.floor((till % (24*60*60*1000)) / (60*60*1000));
+    const leftMinutes = Math.floor((till % (60*60*1000)) / (60*1000));
+    const leftSeconds = Math.floor((till % (60*1000)) / 1000);
+
+    nextValue.textContent = `${formatDateLocalized(next, {...dict, lang: currentLang}, useTime && !!birthTime.value)}`;
+    nextExplain.textContent = `${dict.left} ${formatNumber(leftDays, currentLang)} ${dict.day} ${pad(leftHours)}:${pad(leftMinutes)}:${pad(leftSeconds)}  (${dict.will_turn} ${formatNumber(dymd.years + 1, currentLang)} ${dict.years_old})`;
+
+    // Meta
+    const dow = dict.weekday[b.getDay()];
+    const zodiac = westernZodiac(b.getMonth(), b.getDate(), dict);
+    const cz = chineseZodiac(b.getFullYear(), dict);
+    metaValue.textContent = `${dict.birthday_str}: ${dow} ${b.getDate()} ${dict.month[b.getMonth()]} ${b.getFullYear()} • ${zodiac} • ${cz}`;
+    metaExplain.textContent = `${dict.will_turn} ${formatNumber(dymd.years + 1, currentLang)} ${dict.years_old}`;
+
+    // Status — include seconds
+    const now = new Date();
+    status.textContent = `${dict.calc_at} ${formatDateLocalized(now, {...dict, lang: currentLang}, true, true)}`;
+
+    // For sharing
+    computeOnce.shareText = `${I18N[currentLang].brand}\n` +
+      `${I18N[currentLang].age_now_title}: ${dymd.years} ${dict.year} ${dymd.months} ${dict.month_u} ${dymd.days} ${dict.day}\n`+
+      `${I18N[currentLang].totals_title}: ${totalDays} ${dict.day} / ${totalHours} ${dict.hour} / ${totalMinutes} ${dict.minute} / ${totalSeconds} ${dict.second}\n`+
+      `${I18N[currentLang].next_bday_title}: ${formatDateLocalized(next, {...dict, lang: currentLang}, useTime && !!birthTime.value)} (${I18N[currentLang].left} ${leftDays} ${dict.day})\n`+
+      `${I18N[currentLang].tz}: ${tzName.textContent} (${tzOffset.textContent})`;
+  }
+
+  function computeLive(dict) {
+    stopLive();
+    computeOnce(dict);
+    if (nowToggle.checked) {
+      liveTimer = setInterval(() => computeOnce(dict), 1000);
+    }
+  }
+
+  // ===== Share =====
+  shareBtn.addEventListener('click', async () => {
+    if (!computeOnce.shareText) { toast('warning', I18N[currentLang].fill_and_auto); return; }
+    const text = computeOnce.shareText;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: I18N[currentLang].results, text });
+        toast('success','OK');
+      } else {
+        await navigator.clipboard.writeText(text);
+        toast('success','Copied');
+      }
+    } catch (e) { toast('info','Canceled'); }
+  });
+
+  // ===== Language detection =====
+  function countryToLang(code){
+    code = (code||'').toUpperCase();
+    if (['TH'].includes(code)) return 'th';
+    if (['CN','SG','MY'].includes(code)) return 'zh-Hans';
+    if (['TW','HK','MO'].includes(code)) return 'zh-Hant';
+    if (['VN'].includes(code)) return 'vi';
+    if (['LA'].includes(code) || ['LAO','LA'].includes(code)) return 'lo';
+    if (['MM','BU'].includes(code)) return 'my';
+    return 'en-US';
+  }
+
+  async function detectLang(){
+    // 1) navigator languages
+    const nav = (navigator.languages && navigator.languages[0]) || navigator.language || 'en-US';
+    let guess = 'en-US';
+    if (nav.startsWith('th')) guess = 'th';
+    else if (nav.startsWith('zh')) guess = nav.includes('Hant') ? 'zh-Hant' : 'zh-Hans';
+    else if (nav.startsWith('vi')) guess = 'vi';
+    else if (nav.startsWith('lo')) guess = 'lo';
+    else if (nav.startsWith('my') || nav.startsWith('mm')) guess = 'my';
+    else if (nav.startsWith('en')) guess = 'en-US';
+
+    // 2) IP geo (best-effort; may fail if blocked/CORS)
+    try {
+      const resp = await fetch('https://ipapi.co/country/', {cache: 'no-store'});
+      if (resp.ok) {
+        const code = (await resp.text()).trim();
+        guess = countryToLang(code) || guess;
+      }
+    } catch (e) { /* ignore */ }
+
+    return guess;
+  }
+
+  function renderLang(){
+    applyI18n(currentLang);
+    const dict = I18N[currentLang] || I18N['en-US'];
+    applyUIState(dict);
+    if (birthDate.value) computeLive(dict);
+    saveState();
+  }
+
+  // ===== Events =====
+  [birthDate, birthTime, refDate, refTime, nowToggle, timeDetailToggle].forEach(el => {
+    el.addEventListener('change', () => {
+      const dict = I18N[currentLang] || I18N['en-US'];
+      applyUIState(dict); saveState(); computeLive(dict);
+    });
+    el.addEventListener('input', () => {
+      const dict = I18N[currentLang] || I18N['en-US'];
+      computeLive(dict);
+    });
+  });
+
+  resetBtn.addEventListener('click', () => {
+    stopLive();
+    [birthDate, birthTime, refDate, refTime].forEach(el => el.value = '');
+    nowToggle.checked = true; timeDetailToggle.checked = true; saveState();
+    renderLang();
+    ymdValue.textContent = '— — —';
+    totalValue.textContent = '—';
+    nextValue.textContent = '—';
+    metaValue.textContent = '—';
+    status.textContent = '';
+    toast('info','Reset');
+  });
+
+  // ===== Init =====
+  (async function init(){
+    updateTz();
+    loadState();
+    // Auto-detect language first-time only
+    if (!localStorage.getItem('ageCalc2025')) {
+      currentLang = await detectLang();
+      langSel.value = currentLang;
+    } else {
+      langSel.value = currentLang;
+    }
+    renderLang();
+
+    // If initial birthDate present, start live run
+    if (birthDate.value) {
+      const dict = I18N[currentLang] || I18N['en-US'];
+      computeLive(dict);
+    }
+
+    // Language selector
+    langSel.addEventListener('change', () => {
+      currentLang = langSel.value;
+      renderLang();
+    });
+  })();
+</script>
+</body>
+</html>
